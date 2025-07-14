@@ -1,0 +1,44 @@
+# Guide d'utilisation du serveur HDW MCP pour une application complète
+
+## 1. Pré-requis et configuration
+- Placer le fichier `.env` à la racine de `hdw-mcp-server` avec les variables `HDW_ACCESS_TOKEN` et `HDW_ACCOUNT_ID`.
+- Installer les dépendances dans `hdw-mcp-server` : `npm install`.
+- Compiler le projet : `npm run build`.
+- Lancer le serveur : `node build/index.js`.
+- Le serveur MCP démarre à la fois sur stdio (pour le protocole MCP) et sur un serveur HTTP Express (par défaut sur le port 4000 pour les intégrations frontend classiques).
+
+## 2. Intégration backend (Express)
+- Pour exposer des routes REST accessibles au frontend, ajouter des routes Express dans `src/index.ts`.
+- Pour exploiter la puissance du MCP HDW, utiliser la fonction `makeRequest` avec les endpoints définis dans `API_CONFIG.ENDPOINTS`.
+- Exemple :
+```typescript
+app.post("/prospect", async (req, res) => {
+  const { nom, secteur, localisation } = req.body;
+  const searchParams = { keywords: nom, industry: secteur, location: localisation, count: 1 };
+  const results = await makeRequest(API_CONFIG.ENDPOINTS.SEARCH_USERS, searchParams);
+  // Adapter la réponse pour le frontend
+  res.json({ nom: results[0]?.name, secteur: results[0]?.headline, ... });
+});
+```
+
+## 3. Intégration frontend (React ou autre)
+- Le frontend envoie des requêtes HTTP (ex : POST `/prospect`) vers le backend Express.
+- Le backend fait le lien avec l'API MCP HDW et renvoie des données formatées pour le frontend.
+- Adapter l'affichage du frontend selon les champs réellement renvoyés par le backend.
+
+## 4. Bonnes pratiques
+- Toujours adapter la réponse backend pour correspondre aux besoins du frontend (mapping des champs).
+- Utiliser les outils MCP HDW pour toutes les fonctionnalités avancées (recherche LinkedIn, récupération de profils, etc.).
+- Gérer les erreurs et les cas où aucun résultat n'est trouvé.
+- Pour une application complète, multiplier les routes Express qui exploitent différents outils MCP selon les besoins métier.
+
+## 5. Dépannage
+- Si le port 4000 est déjà utilisé, tuer le processus ou changer de port dans le code.
+- Vérifier les logs backend pour diagnostiquer les problèmes d'appel MCP ou de mapping de données.
+- Toujours relancer le backend après modification du code TypeScript.
+
+**Cette règle s'applique à tout le projet pour garantir une intégration efficace du serveur HDW MCP dans une application web moderne.**
+description:
+globs:
+alwaysApply: false
+---
