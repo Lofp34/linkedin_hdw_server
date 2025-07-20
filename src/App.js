@@ -18,7 +18,9 @@ function App() {
     
     try {
       // URL de l'API Vercel (serverless function)
-      const apiUrl = '/api/prospect';
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/prospect' 
+        : 'https://hdw-server-front-back-58kqvlice.vercel.app/api/prospect';
       
       console.log('🌐 URL de l\'API:', apiUrl);
       console.log('📤 Données envoyées:', form);
