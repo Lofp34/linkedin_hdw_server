@@ -87,16 +87,92 @@ module.exports = async function handler(req, res) {
 
     if (results && results.length > 0) {
       const user = results[0];
+      
+      // Récupération du profil détaillé
+      let detailedProfile = null;
+      let userPosts = null;
+      let userReactions = null;
+      let emailInfo = null;
+      
+      try {
+        // 1. Profil détaillé avec expérience, éducation, compétences
+        if (user.urn) {
+          console.log('Récupération du profil détaillé pour:', user.urn);
+          detailedProfile = await makeRequest('/api/linkedin/get/profile', {
+            user: user.urn,
+            with_experience: true,
+            with_education: true,
+            with_skills: true
+          });
+        }
+        
+        // 2. Posts récents de l'utilisateur
+        if (user.urn) {
+          console.log('Récupération des posts pour:', user.urn);
+          userPosts = await makeRequest('/api/linkedin/get/user/posts', {
+            urn: user.urn,
+            count: 5
+          });
+        }
+        
+        // 3. Réactions récentes
+        if (user.urn) {
+          console.log('Récupération des réactions pour:', user.urn);
+          userReactions = await makeRequest('/api/linkedin/get/user/reactions', {
+            urn: user.urn,
+            count: 5
+          });
+        }
+        
+        // 4. Recherche par email si disponible
+        if (user.email) {
+          console.log('Recherche par email:', user.email);
+          emailInfo = await makeRequest('/api/linkedin/get/email/user', {
+            email: user.email,
+            count: 1
+          });
+        }
+        
+      } catch (error) {
+        console.log('Erreur lors de la récupération des données détaillées:', error.message);
+      }
+
+      // Construction de la réponse complète
       const response = {
+        // Informations de base
         nom: user.name,
-        email: "", // LinkedIn ne fournit pas l'email
-        telephone: "", // LinkedIn ne fournit pas le téléphone
-        description: user.headline,
+        headline: user.headline,
+        location: user.location,
         url: user.url,
-        image: user.image
+        image: user.image,
+        urn: user.urn,
+        
+        // Informations de contact
+        email: emailInfo?.[0]?.email || user.email || "",
+        telephone: emailInfo?.[0]?.phone || "",
+        
+        // Profil détaillé
+        experience: detailedProfile?.experience || [],
+        education: detailedProfile?.education || [],
+        skills: detailedProfile?.skills || [],
+        
+        // Activité récente
+        posts: userPosts || [],
+        reactions: userReactions || [],
+        
+        // Statistiques
+        postCount: userPosts?.length || 0,
+        reactionCount: userReactions?.length || 0,
+        experienceCount: detailedProfile?.experience?.length || 0,
+        educationCount: detailedProfile?.education?.length || 0,
+        skillsCount: detailedProfile?.skills?.length || 0,
+        
+        // Métadonnées
+        lastUpdated: new Date().toISOString(),
+        searchQuery: nom
       };
       
-      console.log('Réponse envoyée:', response);
+      console.log('Réponse complète envoyée:', response);
       res.status(200).json(response);
     } else {
       console.log('Aucun prospect trouvé');
