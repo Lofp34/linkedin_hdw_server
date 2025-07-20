@@ -38,10 +38,17 @@ self.addEventListener('fetch', event => {
 
             // Clone la réponse pour la mettre en cache
             const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
+            
+            // Vérifier que la requête peut être mise en cache
+            if (event.request.url.startsWith('http')) {
+              caches.open(CACHE_NAME)
+                .then(cache => {
+                  cache.put(event.request, responseToCache);
+                })
+                .catch(error => {
+                  console.log('Erreur mise en cache:', error);
+                });
+            }
 
             return response;
           });
