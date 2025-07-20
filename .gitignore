@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+.env
+frontend/build/
+backend-local/.env
+*.log
+.vercel

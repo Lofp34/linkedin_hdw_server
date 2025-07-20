@@ -19,11 +19,11 @@ Ce dépôt contient une application complète permettant d'exploiter la puissanc
 ## Structure du projet
 
 ```
-/hdw-mcp-server         # Backend MCP + Express (pour développement local)
-  /src                  # Code source principal
-  /frontend             # Frontend React (Create React App)
+/frontend               # Frontend React (Create React App)
 /api                    # Fonctions serverless Vercel
   prospect.js           # API endpoint pour la recherche de prospects
+/backend-local          # Backend MCP + Express (pour développement local uniquement)
+  /src                  # Code source principal
 vercel.json             # Configuration Vercel
 .cursor/rules           # Règles Cursor pour l'intégration et la navigation
 README.md               # Ce guide
@@ -51,7 +51,7 @@ README.md               # Ce guide
    ```
 
 2. **Configuration des variables d'environnement**
-   - Crée un fichier `.env` dans `hdw-mcp-server` :
+   - Crée un fichier `.env` dans `backend-local` (pour développement local uniquement) :
      ```env
      HDW_ACCESS_TOKEN=ton_token
      HDW_ACCOUNT_ID=ton_account_id
