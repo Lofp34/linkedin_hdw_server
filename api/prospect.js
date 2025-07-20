@@ -109,6 +109,10 @@ module.exports = async function handler(req, res) {
       console.log('✅ Utilisateur trouvé, traitement en cours...');
       const user = results[0];
       
+      // Préparation de l'URN pour les appels API
+      const userUrn = user.urn?.type && user.urn?.value ? `${user.urn.type}:${user.urn.value}` : user.urn?.value || user.urn;
+      console.log('🔍 URN formaté pour API:', userUrn);
+      
       // Récupération du profil détaillé
       let detailedProfile = null;
       let userPosts = null;
@@ -119,8 +123,6 @@ module.exports = async function handler(req, res) {
         console.log('🔍 Récupération des données détaillées...');
         
         // 1. Profil détaillé avec expérience, éducation, compétences
-        const userUrn = user.urn?.value || user.urn;
-        console.log('🔍 Vérification URN utilisateur:', userUrn || 'URN manquant');
         if (userUrn) {
           console.log('📋 Récupération du profil détaillé pour:', userUrn);
           try {
