@@ -1,6 +1,24 @@
 {
-  "dependencies": {
-    "@types/cors": "^2.8.19",
-    "cors": "^2.8.5"
+  "name": "hdw-server-front-back",
+  "version": "1.0.0",
+  "description": "Application complète HDW MCP Server + Frontend React pour recherche de prospects LinkedIn",
+  "scripts": {
+    "dev": "cd hdw-mcp-server && npm run build && node build/index.js",
+    "build": "cd hdw-mcp-server/frontend && npm run build",
+    "start": "cd hdw-mcp-server/frontend && npm start",
+    "install-all": "cd hdw-mcp-server && npm install && cd frontend && npm install"
+  },
+  "keywords": [
+    "hdw",
+    "mcp",
+    "linkedin",
+    "react",
+    "vercel",
+    "serverless"
+  ],
+  "author": "Laurent Serre",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
