@@ -55,7 +55,7 @@ function App() {
           )}
           {fiche.image && (
             <div style={{ marginTop: 16 }}>
-              <img src={fiche.image} alt="Photo de profil" style={{ width: 100, height: 100, borderRadius: '50%' }} />
+              <img src={fiche.image} alt="Avatar" style={{ width: 100, height: 100, borderRadius: '50%' }} />
             </div>
           )}
         </div>
