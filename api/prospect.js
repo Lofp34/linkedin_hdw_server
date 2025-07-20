@@ -115,6 +115,7 @@ module.exports = async function handler(req, res) {
         console.log('🔍 Récupération des données détaillées...');
         
         // 1. Profil détaillé avec expérience, éducation, compétences
+        console.log('🔍 Vérification URN utilisateur:', user.urn || 'URN manquant');
         if (user.urn) {
           console.log('📋 Récupération du profil détaillé pour:', user.urn);
           try {
@@ -179,8 +180,10 @@ module.exports = async function handler(req, res) {
       }
 
       // Debug: affichons la structure exacte des données reçues
-      console.log('Structure des données utilisateur:', JSON.stringify(user, null, 2));
-      console.log('Structure du profil détaillé:', JSON.stringify(detailedProfile, null, 2));
+      console.log('🔍 Structure des données utilisateur:', JSON.stringify(user, null, 2));
+      console.log('📋 Structure du profil détaillé:', JSON.stringify(detailedProfile, null, 2));
+      console.log('📝 Structure des posts:', JSON.stringify(userPosts, null, 2));
+      console.log('👍 Structure des réactions:', JSON.stringify(userReactions, null, 2));
       
       // Construction de la réponse complète avec gestion des champs manquants
       const response = {

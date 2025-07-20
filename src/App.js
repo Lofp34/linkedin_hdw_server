@@ -27,6 +27,7 @@ function App() {
       });
       
       const data = await res.json();
+      console.log('📋 Données complètes reçues:', data);
       setFiche(data);
     } catch (err) {
       console.error('❌ Erreur lors de la recherche:', err);
