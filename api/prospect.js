@@ -95,6 +95,11 @@ module.exports = async function handler(req, res) {
       let emailInfo = null;
       
       try {
+        // Version simplifiée pour tester d'abord les données de base
+        console.log('Test avec données de base uniquement pour le moment');
+        
+        // On commente temporairement les appels détaillés pour debug
+        /*
         // 1. Profil détaillé avec expérience, éducation, compétences
         if (user.urn) {
           console.log('Récupération du profil détaillé pour:', user.urn);
@@ -132,29 +137,34 @@ module.exports = async function handler(req, res) {
             count: 1
           });
         }
+        */
         
       } catch (error) {
         console.log('Erreur lors de la récupération des données détaillées:', error.message);
       }
 
-      // Construction de la réponse complète
+      // Debug: affichons la structure exacte des données reçues
+      console.log('Structure des données utilisateur:', JSON.stringify(user, null, 2));
+      console.log('Structure du profil détaillé:', JSON.stringify(detailedProfile, null, 2));
+      
+      // Construction de la réponse complète avec gestion des champs manquants
       const response = {
-        // Informations de base
-        nom: user.name,
-        headline: user.headline,
-        location: user.location,
-        url: user.url,
-        image: user.image,
-        urn: user.urn,
+        // Informations de base (avec fallbacks)
+        nom: user.name || user.fullName || user.displayName || "Nom non disponible",
+        headline: user.headline || user.title || user.jobTitle || user.description || "Titre non disponible",
+        location: user.location || user.geoLocation || user.area || "Localisation non disponible",
+        url: user.url || user.profileUrl || user.linkedinUrl || "",
+        image: user.image || user.profileImage || user.avatar || "",
+        urn: user.urn || user.id || "",
         
         // Informations de contact
         email: emailInfo?.[0]?.email || user.email || "",
-        telephone: emailInfo?.[0]?.phone || "",
+        telephone: emailInfo?.[0]?.phone || user.phone || "",
         
-        // Profil détaillé
-        experience: detailedProfile?.experience || [],
-        education: detailedProfile?.education || [],
-        skills: detailedProfile?.skills || [],
+        // Profil détaillé (avec gestion des structures différentes)
+        experience: detailedProfile?.experience || detailedProfile?.workExperience || detailedProfile?.positions || [],
+        education: detailedProfile?.education || detailedProfile?.schools || detailedProfile?.academicBackground || [],
+        skills: detailedProfile?.skills || detailedProfile?.endorsements || detailedProfile?.expertise || [],
         
         // Activité récente
         posts: userPosts || [],
@@ -163,13 +173,13 @@ module.exports = async function handler(req, res) {
         // Statistiques
         postCount: userPosts?.length || 0,
         reactionCount: userReactions?.length || 0,
-        experienceCount: detailedProfile?.experience?.length || 0,
-        educationCount: detailedProfile?.education?.length || 0,
-        skillsCount: detailedProfile?.skills?.length || 0,
+        experienceCount: (detailedProfile?.experience || detailedProfile?.workExperience || detailedProfile?.positions || []).length,
+        educationCount: (detailedProfile?.education || detailedProfile?.schools || detailedProfile?.academicBackground || []).length,
+        skillsCount: (detailedProfile?.skills || detailedProfile?.endorsements || detailedProfile?.expertise || []).length,
         
         // Métadonnées
         lastUpdated: new Date().toISOString(),
-        searchQuery: nom
+        searchQuery: nom || ""
       };
       
       console.log('Réponse complète envoyée:', response);

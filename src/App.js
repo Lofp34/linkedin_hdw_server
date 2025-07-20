@@ -203,8 +203,8 @@ function App() {
 
           {/* Métadonnées */}
           <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px', fontSize: '12px' }}>
-            <p><b>Dernière mise à jour :</b> {new Date(fiche.lastUpdated).toLocaleString('fr-FR')}</p>
-            <p><b>Recherche effectuée :</b> "{fiche.searchQuery}"</p>
+            <p><b>Dernière mise à jour :</b> {fiche.lastUpdated ? new Date(fiche.lastUpdated).toLocaleString('fr-FR') : 'Non disponible'}</p>
+            <p><b>Recherche effectuée :</b> "{fiche.searchQuery || 'Aucune'}"</p>
           </div>
         </div>
       )}
