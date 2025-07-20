@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
+      "src": "hdw-mcp-server/frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
@@ -16,12 +16,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "dest": "/hdw-mcp-server/frontend/$1"
     }
-  ],
-  "functions": {
-    "api/prospect.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 } 
