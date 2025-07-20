@@ -123,46 +123,63 @@ module.exports = async function handler(req, res) {
         console.log('🔍 Récupération des données détaillées...');
         
         // 1. Profil détaillé avec expérience, éducation, compétences
-        if (userUrn) {
-          console.log('📋 Récupération du profil détaillé pour:', userUrn);
+        // Essayons avec l'alias d'abord, puis l'URN, puis l'URL
+        const userIdentifiers = [
+          user.alias,
+          user.url, 
+          userUrn,
+          user.urn?.value
+        ].filter(Boolean);
+        
+        for (const identifier of userIdentifiers) {
+          if (detailedProfile) break; // Si on a déjà récupéré le profil, on arrête
+          
+          console.log('📋 Tentative récupération profil détaillé avec:', identifier);
           try {
             detailedProfile = await makeRequest('/api/linkedin/get/profile', {
-              user: userUrn,
+              user: identifier,
               with_experience: true,
               with_education: true,
               with_skills: true
-            }, 8000); // Timeout 8 secondes
-            console.log('✅ Profil détaillé récupéré:', detailedProfile);
+            }, 8000);
+            console.log('✅ Profil détaillé récupéré avec:', identifier);
+            break;
           } catch (error) {
-            console.log('⚠️ Erreur profil détaillé:', error.message);
+            console.log(`⚠️ Erreur profil détaillé avec ${identifier}:`, error.message);
           }
         }
         
         // 2. Posts récents de l'utilisateur
-        if (userUrn) {
-          console.log('📝 Récupération des posts pour:', userUrn);
+        for (const identifier of userIdentifiers) {
+          if (userPosts) break;
+          
+          console.log('📝 Tentative récupération posts avec:', identifier);
           try {
             userPosts = await makeRequest('/api/linkedin/get/user/posts', {
-              urn: userUrn,
+              urn: identifier,
               count: 5
-            }, 6000); // Timeout 6 secondes
-            console.log('✅ Posts récupérés:', userPosts?.length || 0);
+            }, 6000);
+            console.log('✅ Posts récupérés avec:', identifier, '- Nombre:', userPosts?.length || 0);
+            break;
           } catch (error) {
-            console.log('⚠️ Erreur posts:', error.message);
+            console.log(`⚠️ Erreur posts avec ${identifier}:`, error.message);
           }
         }
         
         // 3. Réactions récentes
-        if (userUrn) {
-          console.log('👍 Récupération des réactions pour:', userUrn);
+        for (const identifier of userIdentifiers) {
+          if (userReactions) break;
+          
+          console.log('👍 Tentative récupération réactions avec:', identifier);
           try {
             userReactions = await makeRequest('/api/linkedin/get/user/reactions', {
-              urn: userUrn,
+              urn: identifier,
               count: 5
-            }, 6000); // Timeout 6 secondes
-            console.log('✅ Réactions récupérées:', userReactions?.length || 0);
+            }, 6000);
+            console.log('✅ Réactions récupérées avec:', identifier, '- Nombre:', userReactions?.length || 0);
+            break;
           } catch (error) {
-            console.log('⚠️ Erreur réactions:', error.message);
+            console.log(`⚠️ Erreur réactions avec ${identifier}:`, error.message);
           }
         }
         
