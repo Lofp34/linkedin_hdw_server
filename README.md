@@ -1,182 +1,70 @@
-# hdw-server-front-back
+# Getting Started with Create React App
 
-Ce dépôt contient une application complète permettant d'exploiter la puissance du serveur HDW MCP (Model Context Protocol) pour accéder aux données LinkedIn via l'API Horizon Data Wave, avec une interface frontend React clé en main.
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-**🚀 Optimisé pour le déploiement Vercel avec architecture serverless !**
+## Available Scripts
 
----
+In the project directory, you can run:
 
-## Fonctionnalités principales
-- Recherche de prospects LinkedIn par mots-clés, secteur, localisation
-- Affichage d'une fiche prospect enrichie (nom, secteur, localisation, description, photo, lien LinkedIn)
-- Architecture modulaire optimisée pour Vercel :
-  - **Frontend** : Application React (Create React App) servie en statique
-  - **Backend** : Fonctions serverless Vercel (`/api/prospect`) qui font le lien avec l'API Horizon Data Wave
-- Prêt à être déployé sur Vercel ou étendu pour d'autres usages
+### `npm start`
 
----
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
-## Structure du projet
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
 
-```
-/frontend               # Frontend React (Create React App)
-/api                    # Fonctions serverless Vercel
-  prospect.js           # API endpoint pour la recherche de prospects
-/backend-local          # Backend MCP + Express (pour développement local uniquement)
-  /src                  # Code source principal
-vercel.json             # Configuration Vercel
-.cursor/rules           # Règles Cursor pour l'intégration et la navigation
-README.md               # Ce guide
-```
+### `npm test`
 
----
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-## Prérequis
-- Node.js >= 18
-- Un compte sur https://app.horizondatawave.ai pour obtenir :
-  - `HDW_ACCESS_TOKEN`
-  - `HDW_ACCOUNT_ID`
-- Un compte Vercel (gratuit) pour le déploiement
+### `npm run build`
 
----
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-## Installation et configuration
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-### Développement local
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-1. **Clone du dépôt**
-   ```bash
-   git clone https://github.com/Lofp34/hdw-server-front-back.git
-   cd hdw-server-front-back
-   ```
+### `npm run eject`
 
-2. **Configuration des variables d'environnement**
-   - Crée un fichier `.env` dans `backend-local` (pour développement local uniquement) :
-     ```env
-     HDW_ACCESS_TOKEN=ton_token
-     HDW_ACCOUNT_ID=ton_account_id
-     ```
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
 
-3. **Installation des dépendances**
-   ```bash
-   npm run install-all
-   ```
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-4. **Lancement en développement**
-   ```bash
-   # Terminal 1 : Backend Express (pour développement)
-   npm run dev
-   
-   # Terminal 2 : Frontend React
-   npm run start
-   ```
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-### Déploiement Vercel
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-1. **Préparer le déploiement**
-   ```bash
-   # Build du frontend
-   npm run build
-   ```
+## Learn More
 
-2. **Déployer sur Vercel**
-   - Connecte ton repo GitHub à Vercel
-   - Ajoute les variables d'environnement dans Vercel :
-     - `HDW_ACCESS_TOKEN`
-     - `HDW_ACCOUNT_ID`
-   - Vercel détectera automatiquement la configuration et déploiera
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-3. **URLs de déploiement**
-   - Frontend : `https://ton-projet.vercel.app`
-   - API : `https://ton-projet.vercel.app/api/prospect`
+To learn React, check out the [React documentation](https://reactjs.org/).
 
----
+### Code Splitting
 
-## Utilisation
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-### En développement local
-- Le frontend appelle `http://localhost:4000/prospect` (backend Express)
-- Saisir un nom, secteur ou localisation dans le formulaire de recherche
-- Cliquer sur "Rechercher" pour obtenir la fiche prospect LinkedIn
+### Analyzing the Bundle Size
 
-### En production (Vercel)
-- Le frontend appelle `/api/prospect` (fonction serverless)
-- Même interface utilisateur, même fonctionnalités
-- Performance optimisée grâce à l'architecture serverless
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
 
----
+### Making a Progressive Web App
 
-## Architecture technique
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
 
-### Développement local
-```mermaid
-graph LR
-  A[Frontend React :3000] --> B[Backend Express :4000]
-  B --> C[API Horizon Data Wave]
-```
+### Advanced Configuration
 
-### Production Vercel
-```mermaid
-graph LR
-  A[Frontend React Static] --> B[API Serverless /api/prospect]
-  B --> C[API Horizon Data Wave]
-```
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
----
+### Deployment
 
-## Bonnes pratiques & extension
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-### Ajouter de nouvelles fonctionnalités
-1. **Créer une nouvelle fonction serverless** dans `/api/` (ex: `/api/chat.js`)
-2. **Adapter le frontend** pour appeler la nouvelle API
-3. **Déployer** : Vercel détectera automatiquement les nouvelles fonctions
+### `npm run build` fails to minify
 
-### Exemple d'extension
-```javascript
-// api/chat.js
-export default async function handler(req, res) {
-  // Logique pour envoyer un message LinkedIn
-  // Appel à l'API HDW pour la fonctionnalité chat
-}
-```
-
----
-
-## Dépannage
-
-### Développement local
-- Si le port 4000 est occupé, tuer le processus ou modifier le port
-- Vérifier les logs backend pour diagnostiquer les appels MCP
-
-### Production Vercel
-- Vérifier les variables d'environnement dans le dashboard Vercel
-- Consulter les logs de fonction dans Vercel > Functions
-- Tester l'API directement : `https://ton-projet.vercel.app/api/prospect`
-
----
-
-## Avantages de l'architecture Vercel
-
-✅ **Performance** : Frontend servi en statique, API serverless à la demande  
-✅ **Scalabilité** : Fonctions serverless s'adaptent automatiquement  
-✅ **Coût** : Gratuit pour usage personnel/petit projet  
-✅ **Simplicité** : Déploiement automatique depuis GitHub  
-✅ **Flexibilité** : Peut facilement ajouter d'autres fonctions serverless  
-
----
-
-## Licence
-MIT
-
----
-
-## Auteur
-Laurent Serre & Horizon Data Wave
-
----
-
-## Ressources utiles
-- [Documentation HDW MCP Server](https://github.com/horizondatawave/hdw-mcp-server)
-- [API Horizon Data Wave](https://app.horizondatawave.ai)
-- [Vercel Serverless Functions](https://vercel.com/docs/functions/serverless-functions)
-- [Create React App](https://github.com/facebook/create-react-app) 
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
