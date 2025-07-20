@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     // Log pour debug
     console.log('Requête reçue:', { method: req.method, body: req.body });
 
-    const { nom, secteur, localisation } = req.body || {};
+    const { nom } = req.body || {};
 
     // Configuration de l'API Horizon Data Wave
     const API_KEY = process.env.HDW_ACCESS_TOKEN;
@@ -75,8 +75,6 @@ module.exports = async function handler(req, res) {
 
     const searchParams = {
       keywords: nom || '',
-      industry: secteur || '',
-      location: localisation || '',
       count: 1,
       timeout: 300
     };
@@ -91,8 +89,6 @@ module.exports = async function handler(req, res) {
       const user = results[0];
       const response = {
         nom: user.name,
-        secteur: user.headline,
-        localisation: user.location,
         email: "", // LinkedIn ne fournit pas l'email
         telephone: "", // LinkedIn ne fournit pas le téléphone
         description: user.headline,

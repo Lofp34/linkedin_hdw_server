@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 function App() {
-  const [form, setForm] = useState({ nom: '', secteur: '', localisation: '' });
+  const [form, setForm] = useState({ nom: '' });
   const [fiche, setFiche] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,17 +36,13 @@ function App() {
     <div style={{ maxWidth: 500, margin: '40px auto', fontFamily: 'sans-serif' }}>
       <h1>Recherche de prospect</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input name="nom" placeholder="Nom" value={form.nom} onChange={handleChange} />
-        <input name="secteur" placeholder="Secteur" value={form.secteur} onChange={handleChange} />
-        <input name="localisation" placeholder="Localisation" value={form.localisation} onChange={handleChange} />
+        <input name="nom" placeholder="Nom, entreprise, secteur, localisation..." value={form.nom} onChange={handleChange} />
         <button type="submit" disabled={loading}>{loading ? 'Recherche...' : 'Rechercher'}</button>
       </form>
       {fiche && (
         <div style={{ marginTop: 32, padding: 16, border: '1px solid #ccc', borderRadius: 8 }}>
           <h2>Fiche prospect</h2>
           <p><b>Nom :</b> {fiche.nom}</p>
-          <p><b>Secteur :</b> {fiche.secteur}</p>
-          <p><b>Localisation :</b> {fiche.localisation}</p>
           <p><b>Email :</b> {fiche.email}</p>
           <p><b>Téléphone :</b> {fiche.telephone}</p>
           <p><b>Description :</b> {fiche.description}</p>
