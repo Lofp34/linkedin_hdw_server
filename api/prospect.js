@@ -47,8 +47,8 @@ module.exports = async function handler(req, res) {
       }
     };
 
-    // Fonction pour faire les requêtes vers l'API HDW
-    async function makeRequest(endpoint, data) {
+    // Fonction pour faire les requêtes vers l'API HDW avec timeout
+    async function makeRequest(endpoint, data, timeout = 10000) {
       const baseUrl = API_CONFIG.BASE_URL.replace(/\/+$/, "");
       const url = baseUrl + (endpoint.startsWith("/") ? endpoint : `/${endpoint}`);
       const headers = {
@@ -56,21 +56,38 @@ module.exports = async function handler(req, res) {
         "access-token": API_KEY
       };
 
-      console.log('Appel API HDW:', { url, data });
+      console.log('🌐 Appel API HDW:', { url, data });
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(data)
-      });
+      // Créer un contrôleur d'abandon pour le timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Erreur API HDW:', { status: response.status, errorData });
-        throw new Error(`API error: ${response.status} ${errorData.message || response.statusText}`);
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(data),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Erreur API HDW:', { status: response.status, errorData });
+          throw new Error(`API error: ${response.status} ${errorData.message || response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Réponse API HDW reçue pour:', endpoint);
+        return result;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error.name === 'AbortError') {
+          throw new Error(`Timeout après ${timeout}ms pour ${endpoint}`);
+        }
+        throw error;
       }
-
-      return await response.json();
     }
 
     const searchParams = {
@@ -95,52 +112,70 @@ module.exports = async function handler(req, res) {
       let emailInfo = null;
       
       try {
-        // Version simplifiée pour tester d'abord les données de base
-        console.log('Test avec données de base uniquement pour le moment');
+        console.log('🔍 Récupération des données détaillées...');
         
-        // On commente temporairement les appels détaillés pour debug
-        /*
         // 1. Profil détaillé avec expérience, éducation, compétences
         if (user.urn) {
-          console.log('Récupération du profil détaillé pour:', user.urn);
-          detailedProfile = await makeRequest('/api/linkedin/get/profile', {
-            user: user.urn,
-            with_experience: true,
-            with_education: true,
-            with_skills: true
-          });
+          console.log('📋 Récupération du profil détaillé pour:', user.urn);
+          try {
+            detailedProfile = await makeRequest('/api/linkedin/get/profile', {
+              user: user.urn,
+              with_experience: true,
+              with_education: true,
+              with_skills: true
+            }, 8000); // Timeout 8 secondes
+            console.log('✅ Profil détaillé récupéré:', detailedProfile);
+          } catch (error) {
+            console.log('⚠️ Erreur profil détaillé:', error.message);
+          }
         }
         
         // 2. Posts récents de l'utilisateur
         if (user.urn) {
-          console.log('Récupération des posts pour:', user.urn);
-          userPosts = await makeRequest('/api/linkedin/get/user/posts', {
-            urn: user.urn,
-            count: 5
-          });
+          console.log('📝 Récupération des posts pour:', user.urn);
+          try {
+            userPosts = await makeRequest('/api/linkedin/get/user/posts', {
+              urn: user.urn,
+              count: 5
+            }, 6000); // Timeout 6 secondes
+            console.log('✅ Posts récupérés:', userPosts?.length || 0);
+          } catch (error) {
+            console.log('⚠️ Erreur posts:', error.message);
+          }
         }
         
         // 3. Réactions récentes
         if (user.urn) {
-          console.log('Récupération des réactions pour:', user.urn);
-          userReactions = await makeRequest('/api/linkedin/get/user/reactions', {
-            urn: user.urn,
-            count: 5
-          });
+          console.log('👍 Récupération des réactions pour:', user.urn);
+          try {
+            userReactions = await makeRequest('/api/linkedin/get/user/reactions', {
+              urn: user.urn,
+              count: 5
+            }, 6000); // Timeout 6 secondes
+            console.log('✅ Réactions récupérées:', userReactions?.length || 0);
+          } catch (error) {
+            console.log('⚠️ Erreur réactions:', error.message);
+          }
         }
         
         // 4. Recherche par email si disponible
         if (user.email) {
-          console.log('Recherche par email:', user.email);
-          emailInfo = await makeRequest('/api/linkedin/get/email/user', {
-            email: user.email,
-            count: 1
-          });
+          console.log('📧 Recherche par email:', user.email);
+          try {
+            emailInfo = await makeRequest('/api/linkedin/get/email/user', {
+              email: user.email,
+              count: 1
+            });
+            console.log('✅ Email info récupéré:', emailInfo);
+          } catch (error) {
+            console.log('⚠️ Erreur email lookup:', error.message);
+          }
         }
-        */
+        
+        console.log('🎉 Récupération des données détaillées terminée');
         
       } catch (error) {
-        console.log('Erreur lors de la récupération des données détaillées:', error.message);
+        console.log('❌ Erreur générale lors de la récupération des données détaillées:', error.message);
       }
 
       // Debug: affichons la structure exacte des données reçues

@@ -14,16 +14,11 @@ function App() {
     setLoading(true);
     setFiche(null);
     
-    console.log('🔍 Début de la recherche avec:', form);
-    
     try {
       // URL de l'API Vercel (serverless function)
       const apiUrl = process.env.NODE_ENV === 'production' 
         ? '/api/prospect' 
         : 'https://hdw-server-front-back-58kqvlice.vercel.app/api/prospect';
-      
-      console.log('🌐 URL de l\'API:', apiUrl);
-      console.log('📤 Données envoyées:', form);
       
       const res = await fetch(apiUrl, {
         method: 'POST',
@@ -31,11 +26,7 @@ function App() {
         body: JSON.stringify(form),
       });
       
-      console.log('📥 Réponse reçue, status:', res.status);
-      
       const data = await res.json();
-      console.log('📋 Données reçues:', data);
-      
       setFiche(data);
     } catch (err) {
       console.error('❌ Erreur lors de la recherche:', err);
