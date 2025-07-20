@@ -100,9 +100,13 @@ module.exports = async function handler(req, res) {
 
     const results = await makeRequest(API_CONFIG.ENDPOINTS.SEARCH_USERS, searchParams);
 
-    console.log('Résultats reçus:', results);
+    console.log('🔍 Résultats bruts reçus:', JSON.stringify(results, null, 2));
+    console.log('📊 Type de résultats:', typeof results);
+    console.log('📊 Est-ce un array?', Array.isArray(results));
+    console.log('📊 Longueur:', results?.length);
 
     if (results && results.length > 0) {
+      console.log('✅ Utilisateur trouvé, traitement en cours...');
       const user = results[0];
       
       // Récupération du profil détaillé
@@ -115,12 +119,13 @@ module.exports = async function handler(req, res) {
         console.log('🔍 Récupération des données détaillées...');
         
         // 1. Profil détaillé avec expérience, éducation, compétences
-        console.log('🔍 Vérification URN utilisateur:', user.urn || 'URN manquant');
-        if (user.urn) {
-          console.log('📋 Récupération du profil détaillé pour:', user.urn);
+        const userUrn = user.urn?.value || user.urn;
+        console.log('🔍 Vérification URN utilisateur:', userUrn || 'URN manquant');
+        if (userUrn) {
+          console.log('📋 Récupération du profil détaillé pour:', userUrn);
           try {
             detailedProfile = await makeRequest('/api/linkedin/get/profile', {
-              user: user.urn,
+              user: userUrn,
               with_experience: true,
               with_education: true,
               with_skills: true
@@ -132,11 +137,11 @@ module.exports = async function handler(req, res) {
         }
         
         // 2. Posts récents de l'utilisateur
-        if (user.urn) {
-          console.log('📝 Récupération des posts pour:', user.urn);
+        if (userUrn) {
+          console.log('📝 Récupération des posts pour:', userUrn);
           try {
             userPosts = await makeRequest('/api/linkedin/get/user/posts', {
-              urn: user.urn,
+              urn: userUrn,
               count: 5
             }, 6000); // Timeout 6 secondes
             console.log('✅ Posts récupérés:', userPosts?.length || 0);
@@ -146,11 +151,11 @@ module.exports = async function handler(req, res) {
         }
         
         // 3. Réactions récentes
-        if (user.urn) {
-          console.log('👍 Récupération des réactions pour:', user.urn);
+        if (userUrn) {
+          console.log('👍 Récupération des réactions pour:', userUrn);
           try {
             userReactions = await makeRequest('/api/linkedin/get/user/reactions', {
-              urn: user.urn,
+              urn: userUrn,
               count: 5
             }, 6000); // Timeout 6 secondes
             console.log('✅ Réactions récupérées:', userReactions?.length || 0);
@@ -193,7 +198,7 @@ module.exports = async function handler(req, res) {
         location: user.location || user.geoLocation || user.area || "Localisation non disponible",
         url: user.url || user.profileUrl || user.linkedinUrl || "",
         image: user.image || user.profileImage || user.avatar || "",
-        urn: user.urn || user.id || "",
+        urn: userUrn || user.urn?.value || user.urn || user.id || "",
         
         // Informations de contact
         email: emailInfo?.[0]?.email || user.email || "",
@@ -223,7 +228,8 @@ module.exports = async function handler(req, res) {
       console.log('Réponse complète envoyée:', response);
       res.status(200).json(response);
     } else {
-      console.log('Aucun prospect trouvé');
+      console.log('❌ Aucun prospect trouvé dans les résultats');
+      console.log('🔍 Résultats reçus:', results);
       res.status(200).json({ message: "Aucun prospect trouvé." });
     }
   } catch (error) {
