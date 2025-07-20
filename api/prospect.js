@@ -186,45 +186,60 @@ module.exports = async function handler(req, res) {
         console.log('❌ Erreur générale lors de la récupération des données détaillées:', error.message);
       }
 
-      // Debug: affichons la structure exacte des données reçues
-      console.log('🔍 Structure des données utilisateur:', JSON.stringify(user, null, 2));
-      console.log('📋 Structure du profil détaillé:', JSON.stringify(detailedProfile, null, 2));
-      console.log('📝 Structure des posts:', JSON.stringify(userPosts, null, 2));
-      console.log('👍 Structure des réactions:', JSON.stringify(userReactions, null, 2));
+      // Données collectées avec succès
       
-      // Construction de la réponse complète avec gestion des champs manquants
+      // Construction de la réponse complète avec TOUTES les données disponibles
       const response = {
-        // Informations de base (avec fallbacks)
+        // ===== INFORMATIONS DE BASE =====
         nom: user.name || user.fullName || user.displayName || "Nom non disponible",
         headline: user.headline || user.title || user.jobTitle || user.description || "Titre non disponible",
         location: user.location || user.geoLocation || user.area || "Localisation non disponible",
         url: user.url || user.profileUrl || user.linkedinUrl || "",
         image: user.image || user.profileImage || user.avatar || "",
         urn: userUrn || user.urn?.value || user.urn || user.id || "",
+        alias: user.alias || "",
         
-        // Informations de contact
-        email: emailInfo?.[0]?.email || user.email || "",
-        telephone: emailInfo?.[0]?.phone || user.phone || "",
+        // ===== TOUTES LES DONNÉES BRUTES DISPONIBLES =====
+        rawUserData: user, // On affiche TOUTES les données reçues
         
-        // Profil détaillé (avec gestion des structures différentes)
+        // ===== STATUT =====
+        openToWork: user.open_to_work || false,
+        
+        // ===== IDENTIFIANTS =====
+        internalId: user.internal_id?.value || "",
+        linkedinId: user.internal_id?.value || user.id || "",
+        
+        // ===== INFORMATIONS DE CONTACT =====
+        email: emailInfo?.[0]?.email || user.email || user.emailAddress || "",
+        telephone: emailInfo?.[0]?.phone || user.phone || user.phoneNumber || "",
+        
+        // ===== DONNÉES DÉTAILLÉES (si disponibles) =====
         experience: detailedProfile?.experience || detailedProfile?.workExperience || detailedProfile?.positions || [],
         education: detailedProfile?.education || detailedProfile?.schools || detailedProfile?.academicBackground || [],
         skills: detailedProfile?.skills || detailedProfile?.endorsements || detailedProfile?.expertise || [],
-        
-        // Activité récente
         posts: userPosts || [],
         reactions: userReactions || [],
         
-        // Statistiques
-        postCount: userPosts?.length || 0,
-        reactionCount: userReactions?.length || 0,
-        experienceCount: (detailedProfile?.experience || detailedProfile?.workExperience || detailedProfile?.positions || []).length,
-        educationCount: (detailedProfile?.education || detailedProfile?.schools || detailedProfile?.academicBackground || []).length,
-        skillsCount: (detailedProfile?.skills || detailedProfile?.endorsements || detailedProfile?.expertise || []).length,
+        // ===== DONNÉES BRUTES DÉTAILLÉES =====
+        rawDetailedProfile: detailedProfile,
+        rawPosts: userPosts,
+        rawReactions: userReactions,
+        rawEmailInfo: emailInfo,
         
-        // Métadonnées
+        // ===== STATISTIQUES =====
+        hasDetailedData: !!(detailedProfile || userPosts || userReactions),
+        dataSourcesAvailable: {
+          basicProfile: !!user,
+          detailedProfile: !!detailedProfile,
+          posts: !!userPosts,
+          reactions: !!userReactions,
+          emailLookup: !!emailInfo
+        },
+        
+        // ===== MÉTADONNÉES =====
         lastUpdated: new Date().toISOString(),
-        searchQuery: nom || ""
+        searchQuery: nom || "",
+        apiResponse: "Toutes les données disponibles affichées"
       };
       
       console.log('Réponse complète envoyée:', response);

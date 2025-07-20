@@ -111,12 +111,59 @@ function App() {
             {fiche.url && (
               <p><b>Lien LinkedIn :</b> <a href={fiche.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>{fiche.url}</a></p>
             )}
+            {fiche.alias && <p><b>Alias LinkedIn :</b> {fiche.alias}</p>}
+            {fiche.internalId && <p><b>ID LinkedIn :</b> {fiche.internalId}</p>}
+            <p><b>Ouvert aux opportunités :</b> {fiche.openToWork ? 'Oui' : 'Non'}</p>
+            <p><b>URN :</b> <code style={{ fontSize: '11px', background: '#f0f0f0', padding: '2px 4px' }}>{fiche.urn}</code></p>
             {fiche.image && (
               <div style={{ marginTop: 16, textAlign: 'center' }}>
                 <img src={fiche.image} alt="Avatar" style={{ width: 120, height: 120, borderRadius: '50%', border: '3px solid #0077b5' }} />
               </div>
             )}
           </div>
+
+          {/* Sources de données */}
+          {fiche.dataSourcesAvailable && (
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
+                📊 Sources de données disponibles
+              </h3>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                <li>✅ Profil de base : Disponible</li>
+                <li>{fiche.dataSourcesAvailable.detailedProfile ? '✅' : '❌'} Profil détaillé : {fiche.dataSourcesAvailable.detailedProfile ? 'Disponible' : 'Non disponible'}</li>
+                <li>{fiche.dataSourcesAvailable.posts ? '✅' : '❌'} Posts : {fiche.dataSourcesAvailable.posts ? 'Disponible' : 'Non disponible'}</li>
+                <li>{fiche.dataSourcesAvailable.reactions ? '✅' : '❌'} Réactions : {fiche.dataSourcesAvailable.reactions ? 'Disponible' : 'Non disponible'}</li>
+                <li>{fiche.dataSourcesAvailable.emailLookup ? '✅' : '❌'} Email lookup : {fiche.dataSourcesAvailable.emailLookup ? 'Disponible' : 'Non disponible'}</li>
+              </ul>
+            </div>
+          )}
+
+          {/* Toutes les données brutes */}
+          {fiche.rawUserData && (
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
+                🔍 Toutes les données LinkedIn disponibles
+              </h3>
+              <div style={{ 
+                background: '#f8f9fa', 
+                border: '1px solid #dee2e6', 
+                borderRadius: '8px', 
+                padding: '15px',
+                overflow: 'auto',
+                maxHeight: '400px'
+              }}>
+                <pre style={{ 
+                  margin: 0, 
+                  fontSize: '12px', 
+                  lineHeight: '1.4',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}>
+                  {JSON.stringify(fiche.rawUserData, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
 
           {/* Expérience professionnelle */}
           {fiche.experience && fiche.experience.length > 0 && (
