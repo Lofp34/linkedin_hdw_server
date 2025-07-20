@@ -13,20 +13,30 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setFiche(null);
+    
+    console.log('🔍 Début de la recherche avec:', form);
+    
     try {
-      // URL adaptée pour Vercel (API serverless) vs développement local
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/prospect' 
-        : 'http://localhost:4000/prospect';
+      // URL de l'API Vercel (serverless function)
+      const apiUrl = '/api/prospect';
+      
+      console.log('🌐 URL de l\'API:', apiUrl);
+      console.log('📤 Données envoyées:', form);
       
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
+      
+      console.log('📥 Réponse reçue, status:', res.status);
+      
       const data = await res.json();
+      console.log('📋 Données reçues:', data);
+      
       setFiche(data);
     } catch (err) {
+      console.error('❌ Erreur lors de la recherche:', err);
       alert('Erreur lors de la recherche du prospect.');
     }
     setLoading(false);
