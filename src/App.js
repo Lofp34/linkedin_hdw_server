@@ -33,15 +33,66 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h1>Recherche de prospect</h1>
+    <div style={{ 
+      maxWidth: 500, 
+      margin: '40px auto', 
+      fontFamily: 'sans-serif',
+      padding: '0 20px',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <h1 style={{ 
+        textAlign: 'center', 
+        color: '#0077b5',
+        marginBottom: '30px',
+        fontSize: '2rem'
+      }}>🔍 Recherche de prospect</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input name="nom" placeholder="Nom, entreprise, secteur, localisation..." value={form.nom} onChange={handleChange} />
-        <button type="submit" disabled={loading}>{loading ? 'Recherche...' : 'Rechercher'}</button>
+        <input 
+          name="nom" 
+          placeholder="Nom, entreprise, secteur, localisation..." 
+          value={form.nom} 
+          onChange={handleChange}
+          style={{
+            padding: '15px',
+            fontSize: '16px',
+            border: '2px solid #0077b5',
+            borderRadius: '8px',
+            outline: 'none'
+          }}
+        />
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{
+            padding: '15px',
+            fontSize: '16px',
+            backgroundColor: '#0077b5',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1
+          }}
+        >
+          {loading ? '🔍 Recherche...' : '🔍 Rechercher'}
+        </button>
       </form>
       {fiche && (
-        <div style={{ marginTop: 32, padding: 16, border: '1px solid #ccc', borderRadius: 8 }}>
-          <h2>Fiche prospect</h2>
+        <div style={{ 
+          marginTop: 32, 
+          padding: 20, 
+          border: '2px solid #0077b5', 
+          borderRadius: 12,
+          backgroundColor: '#f8f9fa',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ 
+            color: '#0077b5', 
+            marginBottom: '20px',
+            textAlign: 'center'
+          }}>📋 Fiche prospect</h2>
           <p><b>Nom :</b> {fiche.nom}</p>
           <p><b>Email :</b> {fiche.email}</p>
           <p><b>Téléphone :</b> {fiche.telephone}</p>
