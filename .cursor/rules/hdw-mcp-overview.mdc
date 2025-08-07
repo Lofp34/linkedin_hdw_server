@@ -1,0 +1,27 @@
+---
+alwaysApply: true
+---
+# HDW MCP Server – Vue d'ensemble
+
+Ce projet intègre un serveur MCP HDW pour accéder à l’API Horizon Data Wave (LinkedIn, Google, Reddit) et expose des outils utilisables via un client MCP (Cursor/Claude/Windsurf) et un backend Express local.
+
+- Documentation complète: [README_hdw-mcp-server.md](mdc:README_hdw-mcp-server.md)
+- Entrée MCP locale: `backend-local/hdw-mcp-server/src/index.ts`
+- Outils exposés: recherche/utilisateurs/profils, posts/réactions, gestion de conversations, entreprises, Google search, etc. Voir la section "Tools" du README.
+
+## Variables d’environnement
+Créer un fichier `.env` (ou `~/.hdw-mcp.env`) contenant:
+```
+HDW_ACCESS_TOKEN=VOTRE_CLE
+HDW_ACCOUNT_ID=VOTRE_COMPTE
+```
+Le serveur charge `.env` et `~/.hdw-mcp.env` automatiquement.
+
+## Démarrer en local (MCP + HTTP)
+Dans `backend-local/hdw-mcp-server`:
+1. `npm install`
+2. `npm run build`
+3. `node build/index.js`
+
+- Le serveur MCP tourne sur stdio (pour les clients MCP)
+- Un serveur HTTP Express écoute sur `http://localhost:4000` et expose la route `POST /prospect`

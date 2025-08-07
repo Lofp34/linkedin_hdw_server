@@ -1,0 +1,28 @@
+---
+globs: *
+---
+# Outils MCP HDW – Résumé d’utilisation
+
+Voir les descriptions détaillées dans [README_hdw-mcp-server.md](mdc:README_hdw-mcp-server.md).
+
+- search_linkedin_users: Recherche utilisateurs (filtres: keywords, first_name, last_name, title, company_keywords, location, industry, education, count, timeout)
+- get_linkedin_profile: Profil détaillé (user, with_experience, with_education, with_skills)
+- get_linkedin_email_user: Lookup par email (email, count, timeout)
+- get_linkedin_user_posts: Posts utilisateur (urn, count, timeout)
+- get_linkedin_user_reactions: Réactions utilisateur (urn, count, timeout)
+- get_linkedin_chat_messages: Messages (user, company?, count, timeout)
+- send_linkedin_chat_message: Envoyer message (user, text, company?)
+- send_linkedin_connection: Invitation (user)
+- send_linkedin_post_comment: Commenter (text, urn activité/comment)
+- get_linkedin_user_connections: Connexions (connected_after?, count?)
+- get_linkedin_post_reposts: Reposts (urn activity, count)
+- get_linkedin_post_comments: Commentaires (urn activity, sort, count)
+- get_linkedin_post_reactions: Réactions (urn activity, count)
+- get_linkedin_google_company: Recherche sociétés via Google (keywords[], with_urn?, count_per_keyword)
+- get_linkedin_company: Société (company alias/url/urn)
+- get_linkedin_company_employees: Employés (companies[], keywords?, first_name?, last_name?, count)
+- linkedin_sn_search_users: Sales Navigator (nombreux filtres, count)
+- get_linkedin_conversations: Conversations (connected_after?, count?)
+- google_search: Recherche Google (query, count)
+
+Notes: Certains endpoints nécessitent `HDW_ACCOUNT_ID` (gestion). Les URN attendent des préfixes (`fsd_profile:`, `activity:`).

@@ -1,0 +1,35 @@
+---
+description: Configuration client pour utiliser le serveur MCP HDW dans Cursor/Claude/Windsurf
+---
+# Intégration client MCP
+
+## Via Smithery (Claude/Windsurf)
+Installer automatiquement:
+```
+npx -y @smithery/cli install @horizondatawave/hdw-mcp-server --client claude
+```
+
+## Cursor – méthode simple
+Dans les paramètres MCP servers, commande:
+```
+env HDW_ACCESS_TOKEN=... HDW_ACCOUNT_ID=... node /chemin/vers/backend-local/hdw-mcp-server/build/index.js
+```
+
+## Claude Desktop – configuration
+Fichier `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "hdw": {
+      "command": "npx",
+      "args": ["-y","@horizondatawave/mcp"],
+      "env": {
+        "HDW_ACCESS_TOKEN": "VOTRE_TOKEN",
+        "HDW_ACCOUNT_ID": "VOTRE_ACCOUNT_ID"
+      }
+    }
+  }
+}
+```
+
+Désactivez si besoin des web-tools pour économiser les crédits API.
