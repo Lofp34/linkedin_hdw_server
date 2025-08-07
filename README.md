@@ -1,70 +1,231 @@
-# Getting Started with Create React App
+# HDW MCP Server – Front + Back (React + MCP + Express)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Accédez aux données LinkedIn de manière fiable via l’API Horizon Data Wave (HDW) avec un serveur MCP local et une interface React prête à l’emploi. Ce projet fournit:
 
-## Available Scripts
+- Un serveur MCP local (`backend-local/hdw-mcp-server`) exposant des outils LinkedIn/Google/Reddit
+- Un endpoint HTTP Express (`POST /prospect`) pour un usage direct côté frontend
+- Une application React (Create React App) pour rechercher un prospect et afficher une fiche enrichie
+- Une fonction serverless compatible Vercel (`/api/prospect`) pour la production
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Sommaire
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- [Fonctionnalités](#fonctionnalités)
+- [Architecture](#architecture)
+- [Structure du projet](#structure-du-projet)
+- [Prérequis](#prérequis)
+- [Variables d’environnement](#variables-denvironnement)
+- [Installation et démarrage rapide](#installation-et-démarrage-rapide)
+- [Exécution locale (développement)](#exécution-locale-développement)
+- [Configuration d’un client MCP (Cursor/Claude/Windsurf)](#configuration-dun-client-mcp-cursorclaudewindsurf)
+- [API HTTP locale](#api-http-locale)
+- [Déploiement sur Vercel](#déploiement-sur-vercel)
+- [Dépannage](#dépannage)
+- [Licence](#licence)
+- [Ressources utiles](#ressources-utiles)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Fonctionnalités
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- Recherche d’utilisateurs LinkedIn par mots-clés, nom, titre, entreprise, localisation, industrie, éducation
+- Récupération de profil détaillé, expériences, formations, compétences
+- Récupération de posts, réactions, commentaires, reposts
+- Gestion de compte (via Management API): messages, invitations, connexions
+- Recherche d’entreprises (Google -> LinkedIn), informations société, employés
+- Recherche Google et Reddit
+- Frontend React simple pour tester immédiatement la recherche de prospects
 
-### `npm run build`
+Les outils MCP détaillés sont listés dans: `.cursor/rules/hdw-mcp-tools.mdc` et dans la documentation [README_hdw-mcp-server.md](README_hdw-mcp-server.md).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Architecture
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```mermaid
+flowchart LR
+  subgraph Local Dev
+    A[React App :3000] -- POST /prospect --> B[Express :4000]
+    B -- API HDW --> C[(Horizon Data Wave API)]
+    D[MCP Server (stdio)] -. outils .-> C
+  end
+```
 
-### `npm run eject`
+- Le serveur MCP tourne sur stdio (pour un client MCP comme Cursor/Claude) ET expose un serveur HTTP Express sur `:4000`.
+- Le frontend (CRA) écoute sur `:3000` en dev.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Structure du projet
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+hdw-server-front-back/
+  api/                      # Fonction serverless (Vercel) /api/prospect
+    prospect.js
+  backend-local/
+    hdw-mcp-server/         # Serveur MCP + Express (local)
+      src/
+        index.ts            # Entrée principale MCP + Express (POST /prospect)
+        types.ts            # Types + validateurs outils
+      tsconfig.json
+    src/                    # Variante MCP (non utilisée par défaut)
+  .cursor/rules/            # Règles Cursor (documentation intégrée MCP)
+  public/                   # CRA public
+  src/                      # CRA source
+  README_hdw-mcp-server.md  # Documentation complète serveur MCP HDW
+  README.md                 # Ce fichier
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## Prérequis
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Node.js >= 18 (recommandé: LTS
+- Un compte sur `https://app.horizondatawave.ai` pour obtenir:
+  - `HDW_ACCESS_TOKEN`
+  - `HDW_ACCOUNT_ID` (requis pour les endpoints de gestion)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Variables d’environnement
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Créez un fichier `.env` à la racine du repo (ou `~/.hdw-mcp.env`) avec:
 
-### Analyzing the Bundle Size
+```
+HDW_ACCESS_TOKEN=VOTRE_CLE
+HDW_ACCOUNT_ID=VOTRE_COMPTE
+# Optionnel: endpoint personnalisé si fourni par HDW
+HDW_BASE_URL=https://api.horizondatawave.ai
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Le serveur MCP charge automatiquement:
+- `.env` à différents emplacements (incluant la racine du repo)
+- `~/.hdw-mcp.env` (override utilisateur)
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Installation et démarrage rapide
 
-### Advanced Configuration
+1) Installer les dépendances frontend
+```
+npm install
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+2) Démarrer le serveur MCP local (HTTP + stdio)
+```
+cd backend-local/hdw-mcp-server
+npm install
+npm run build
+node build/index.js
+```
+Le serveur HTTP écoute sur `http://localhost:4000`.
 
-### Deployment
+3) Démarrer l’application React (dans un autre terminal)
+```
+cd /chemin/vers/hdw-server-front-back
+npm start
+```
+Ouvrez `http://localhost:3000`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
+## Exécution locale (développement)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- Frontend (CRA): `npm start` (port 3000)
+- MCP + Express: `node backend-local/hdw-mcp-server/build/index.js` (port 4000)
+- En dev, le frontend est configuré pour appeler `http://localhost:4000/prospect` (voir `src/App.js`).
+
+Tester rapidement l’API locale:
+```
+curl -X POST http://localhost:4000/prospect \
+  -H 'Content-Type: application/json' \
+  -d '{"nom":"openai"}'
+```
+
+---
+
+## Configuration d’un client MCP (Cursor/Claude/Windsurf)
+
+Consultez et suivez `.cursor/rules/hdw-mcp-client-setup.mdc`.
+
+Exemple (Cursor, méthode simple):
+```
+env HDW_ACCESS_TOKEN=... HDW_ACCOUNT_ID=... \
+  node /chemin/vers/hdw-server-front-back/backend-local/hdw-mcp-server/build/index.js
+```
+
+Claude Desktop (extrait de `claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "hdw": {
+      "command": "npx",
+      "args": ["-y", "@horizondatawave/mcp"],
+      "env": {
+        "HDW_ACCESS_TOKEN": "VOTRE_TOKEN",
+        "HDW_ACCOUNT_ID": "VOTRE_ACCOUNT_ID"
+      }
+    }
+  }
+}
+```
+
+Plus de détails dans [README_hdw-mcp-server.md](README_hdw-mcp-server.md).
+
+---
+
+## API HTTP locale
+
+- `POST /prospect` (port 4000)
+  - Body: `{ "nom": "<mot-clé>" }`
+  - Réponse: fiche prospect enrichie (nom, headline, localisation, lien LinkedIn, image, URN, etc.)
+
+Exemple:
+```
+curl -X POST http://localhost:4000/prospect \
+  -H 'Content-Type: application/json' \
+  -d '{"nom":"openai"}'
+```
+
+Pour les outils MCP disponibles (recherche utilisateurs, profil, posts, etc.), référez-vous à `.cursor/rules/hdw-mcp-tools.mdc` et au [README_hdw-mcp-server.md](README_hdw-mcp-server.md).
+
+---
+
+## Déploiement sur Vercel
+
+- Frontend: build CRA.
+- Backend: fonction serverless `api/prospect.js`.
+
+Étapes:
+1) Définissez les variables d’environnement dans le dashboard Vercel:
+   - `HDW_ACCESS_TOKEN`, `HDW_ACCOUNT_ID` (et éventuellement `HDW_BASE_URL`)
+2) Déployez (connexion GitHub -> Vercel). Vercel détecte `/api/prospect` automatiquement.
+3) URLs typiques:
+   - Frontend: `https://<votre-projet>.vercel.app`
+   - API: `https://<votre-projet>.vercel.app/api/prospect`
+
+---
+
+## Dépannage
+
+- « Cannot find module build/index.js »: lancez `node backend-local/hdw-mcp-server/build/index.js` (pas à la racine), et exécutez `npm run build` dans `hdw-mcp-server` si besoin.
+- 4000 occupé: changez le port dans `backend-local/hdw-mcp-server/src/index.ts` ou libérez le port.
+- 401/403 API HDW: vérifiez `HDW_ACCESS_TOKEN` et `HDW_ACCOUNT_ID`.
+- Données vides: vérifiez la requête (`keywords`, `count`, `URN` préfixé `fsd_profile:` pour les endpoints qui l’exigent).
+- Node: utilisez Node >= 18.
+
+---
+
+## Licence
+
+MIT – voir `LICENSE` / `LICENSE.md`.
+
+---
+
+## Ressources utiles
+
+- Documentation MCP HDW: [README_hdw-mcp-server.md](README_hdw-mcp-server.md)
+- API Horizon Data Wave: https://app.horizondatawave.ai
+- Create React App: https://github.com/facebook/create-react-app
+- Cursor Rules (docs internes): `.cursor/rules/*.mdc`
