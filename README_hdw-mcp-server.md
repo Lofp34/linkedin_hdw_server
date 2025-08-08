@@ -172,6 +172,30 @@ HDW MCP Server exposes several tools through the MCP protocol. Each tool is defi
 
 ---
 
+## Endpoints HTTP (Express local)
+
+Le serveur MCP lance aussi un serveur HTTP local (par défaut sur `http://localhost:4000`) pour faciliter l’intégration front-end.
+
+- `POST /prospect`  
+  Cherche un profil selon `nom`, `secteur` et `localisation`, puis renvoie le profil détaillé du premier résultat.
+
+- `POST /prospects`  
+  Renvoie une liste simplifiée (top 5) avec `nom`, `headline`, `localisation`, `url`, `image`, `urn`, `alias` pour laisser l’utilisateur choisir le bon profil.
+
+- `POST /prospect/detail`  
+  Récupère le profil complet d’un utilisateur à partir de `identifier`/`alias`/`url`/`urn` (fallback interne). La réponse est un objet profil normalisé (et non un tableau).
+
+- `POST /prospect/posts`  
+  Renvoie les posts d’un utilisateur via son `urn` (format `fsd_profile:...`). Paramètres: `urn`, `count?`.
+
+- `POST /prospect/last-activity`  
+  Renvoie le dernier post et ses interactions: `{ post, activity_urn, comments, reactions }`.  
+  Paramètres: `urn` (format `fsd_profile:...`), `comments_count?`, `reactions_count?`, `sort?` ("relevance" | "recent").
+
+Note: Si vous souhaitez n’afficher que les « Commentaires » et « Réactions » côté UI, ignorez simplement le champ `post` de la réponse `last-activity` (ne l’affichez pas). Cela évite de dupliquer le contenu du post dans cette vue.
+
+---
+
 ## Setup Guide
 
 ### Installing via Smithery
