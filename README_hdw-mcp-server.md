@@ -122,7 +122,7 @@ HDW MCP Server exposes several tools through the MCP protocol. Each tool is defi
     **Name:** `get_linkedin_post_comments`  
     **Description:** Retrieve comments for a LinkedIn post.  
     **Parameters:**  
-    - `urn` (required).  
+    - `urn` (required): Post URN (must start with `activity:`).  
     - `sort` (optional, default: `"relevance"`; allowed values: `"relevance"`, `"recent"`).  
     - `count` (optional, default: 10).  
     - `timeout` (optional, default: 300).
@@ -188,11 +188,11 @@ Le serveur MCP lance aussi un serveur HTTP local (par défaut sur `http://localh
 - `POST /prospect/posts`  
   Renvoie les posts d’un utilisateur via son `urn` (format `fsd_profile:...`). Paramètres: `urn`, `count?`.
 
-- `POST /prospect/last-activity`  
-  Renvoie le dernier post et ses interactions: `{ post, activity_urn, comments, reactions }`.  
-  Paramètres: `urn` (format `fsd_profile:...`), `comments_count?`, `reactions_count?`, `sort?` ("relevance" | "recent").
+- `POST /prospect/user-activity`  
+  Renvoie l’activité de l’utilisateur (ce qu’il a fait): `{ comments, reactions }` où `comments` = derniers commentaires postés par l’utilisateur, `reactions` = dernières réactions laissées par l’utilisateur.  
+  Paramètres: `urn` (format `fsd_profile:...`), `comments_count?` (par défaut 10), `reactions_count?` (par défaut 50).
 
-Note: Si vous souhaitez n’afficher que les « Commentaires » et « Réactions » côté UI, ignorez simplement le champ `post` de la réponse `last-activity` (ne l’affichez pas). Cela évite de dupliquer le contenu du post dans cette vue.
+Note: Cette route consomme exclusivement les outils MCP alignés « utilisateur » (`get_linkedin_user_comments` et `get_linkedin_user_reactions`). Aucun contenu de « dernier post » n’est renvoyé ici.
 
 ---
 
@@ -234,6 +234,10 @@ Create a `.env` file in the root of your project with the following content:
 HDW_ACCESS_TOKEN=YOUR_HD_W_ACCESS_TOKEN
 HDW_ACCOUNT_ID=YOUR_HD_W_ACCOUNT_ID
 ```
+
+The server also auto-loads a user-level env file if present: `~/.hdw-mcp.env`. This is convenient to avoid committing secrets.
+
+Minimum required: `HDW_ACCESS_TOKEN`. Some management endpoints also require `HDW_ACCOUNT_ID`.
 ### 4. Client Configuration
 
 #### 4.1 Claude Desktop
@@ -316,6 +320,71 @@ Below is an example configuration for an MCP client (e.g., a custom integration)
 }
 ```
 Replace the paths and credentials with your own values.
+
+---
+
+## Spécifications Techniques & Fonctionnelles (Single Source of Truth)
+
+### Architecture
+- **MCP (stdio)**: serveur MCP accessible par les clients (Cursor/Claude/Windsurf) via stdio. Entrée: `backend-local/hdw-mcp-server/src/index.ts` (transpilé en `build/index.js`).
+- **HTTP (Express)**: serveur local sur `:4000` exposant des routes pour intégration front Web/JS.
+- **HDW API**: backend externe HorizonDataWave (`https://api.horizondatawave.ai`). Auth par header `access-token`.
+
+Flux type:
+1) Client MCP → Tool name + payload → serveur MCP.
+2) Serveur MCP → `makeRequest()` → HDW API.
+3) Réponse HDW → renvoyée à MCP client et/ou aux routes Express.
+
+### Authentification
+- `HDW_ACCESS_TOKEN` obligatoire (header `access-token`).
+- `HDW_ACCOUNT_ID` requis pour certaines routes de management (chat, conversations, post…).
+- Chargement d’`env` depuis `.env` et `~/.hdw-mcp.env`.
+
+### Endpoints MCP (Tools)
+Voir section « Tools » ci-dessus. Chaque tool valide ses paramètres (fonctions `isValid*` dans `src/types.ts`) et appelle l’endpoint HDW correspondant via `makeRequest`.
+
+### Endpoints HTTP (Express)
+Voir section dédiée. 4 routes principales: `/prospect`, `/prospects`, `/prospect/detail`, `/prospect/posts`, `/prospect/user-activity`.
+
+### Modèles de données (extraits clés)
+- Utilisateur (simplifié, retour `/prospects`): `{ nom, headline, localisation, url, image, urn, alias }`.
+- Profil détaillé: structure complète HDW (profil + éventuellement expériences/éducation/skills si fournis par HDW). NB: l’API peut parfois renvoyer un tableau mono-élément.
+- Posts utilisateur: tableau d’objets post (champ `urn` type `activity:...`, `text`, `images`, `video_url`, `reactions`, etc.).
+- Activité utilisateur: `{ comments: Comment[], reactions: Reaction[] }` (commentaires et réactions FAITS par l’utilisateur, avec `post.urn` source, `url`, `created_at`, etc.).
+
+### Gestion des erreurs
+- Niveau MCP: toute erreur HDW (`!response.ok`) est transformée en `Error` avec message explicite (`API error: <status> <message>`), loguée et renvoyée comme contenu d’erreur MCP.
+- Niveau Express: erreurs renvoyées en JSON `{ error, details }` avec codes: 400 (mauvais paramètres), 502 (échec tiers), 500 (erreur interne).
+- Cas connus: `500 Internal Server Error` sur `post/reactions` (selon plan/jeton); préférer les routes « user-* » pour l’activité utilisateur.
+
+### Guides pas à pas
+1) Démarrer en local
+   - `cd backend-local/hdw-mcp-server && npm install && npm run build && node build/index.js`
+   - Vérifier: logs `Serveur HTTP Express lancé sur le port 4000`.
+2) Rechercher top 5 profils (HTTP)
+   - `POST http://localhost:4000/prospects` body: `{ "nom": "laurent serre", "secteur": "", "localisation": "" }`.
+3) Obtenir profil détaillé (HTTP)
+   - `POST http://localhost:4000/prospect/detail` body: `{ "identifier":"alias|url|urn" }`.
+4) Posts (HTTP)
+   - `POST http://localhost:4000/prospect/posts` body: `{ "urn": "fsd_profile:...", "count": 5 }`.
+5) Commentaires & Réactions FAITS par l’utilisateur (HTTP)
+   - `POST http://localhost:4000/prospect/user-activity` body: `{ "urn": "fsd_profile:...", "comments_count": 10, "reactions_count": 50 }`.
+6) Côté MCP (exemples)
+   - `search_linkedin_users` → `{ keywords: "laurent serre", count: 5 }`.
+   - `get_linkedin_profile` → `{ user: "laurentserre34", with_experience: true, with_education: true, with_skills: true }`.
+   - `get_linkedin_user_posts` → `{ urn: "fsd_profile:...", count: 5 }`.
+   - `get_linkedin_user_reactions` → `{ urn: "fsd_profile:...", count: 50 }`.
+
+### Cas d’usage typiques
+- Recherche + sélection d’un profil, puis affichage exhaustif du profil, et navigation par onglets: Profil | Posts | Commentaires & Réactions (faits par l’utilisateur).
+- Monitoring d’activité utilisateur (derniers commentaires/réactions) sans dépendre des endpoints « post-* ».
+
+### Glossaire
+- **MCP**: protocole de dialogue outil-assistant par stdio.
+- **HDW**: Horizon Data Wave, fournisseur API LinkedIn/Google/Reddit.
+- **URN**: identifiant de ressource (ex: `fsd_profile:...` pour user, `activity:...` pour post).
+- **Activity**: URN de post LinkedIn (`activity:<id>`).
+- **Management API**: endpoints d’actions (messages, connexions, posts, etc.).
 ## License
 
 This project is licensed under the [MIT License](LICENSE.md).

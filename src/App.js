@@ -12,6 +12,13 @@ function App() {
   const [activeTab, setActiveTab] = useState('profile');
   const [posts, setPosts] = useState([]);
   const [lastActivity, setLastActivity] = useState(null);
+  const fmtDate = (ts) => {
+    if (!ts && ts !== 0) return '';
+    const ms = ts > 1e12 ? ts : ts * 1000;
+    const d = new Date(ms);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString();
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -487,7 +494,7 @@ function App() {
               if (!lastActivity) {
                 try {
                   const baseUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
-                  const res = await fetch(`${baseUrl}/prospect/last-activity`, {
+                  const res = await fetch(`${baseUrl}/prospect/user-activity`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ urn: (typeof fiche.urn === 'string' ? fiche.urn : `${fiche.urn?.type}:${fiche.urn?.value}`), comments_count: 10, reactions_count: 50 })
                   });
@@ -524,15 +531,11 @@ function App() {
 
           {activeTab === 'activity' && (
             <div style={{ background: '#fff', border: '1px solid #dee2e6', borderRadius: 12, padding: 18 }}>
-              <h3 style={{ marginTop: 0, color: '#0b5cab' }}>Dernier post, commentaires & réactions</h3>
+              <h3 style={{ marginTop: 0, color: '#0b5cab' }}>Commentaires & Réactions</h3>
               {!lastActivity ? (
                 <div style={{ color: '#5a6b7b' }}>Aucune activité.</div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ border: '1px solid #e7eef5', background: 'white', borderRadius: 10, padding: 12 }}>
-                    <div style={{ fontWeight: 700, color: '#0f1d2d' }}>Post</div>
-                    <div style={{ fontSize: 13, color: '#2a3948', whiteSpace: 'pre-wrap', marginTop: 6 }}>{lastActivity.post?.text || lastActivity.post?.content || 'Post'}</div>
-                  </div>
                   <div style={{ border: '1px solid #e7eef5', background: 'white', borderRadius: 10, padding: 12 }}>
                     <div style={{ fontWeight: 700, color: '#0f1d2d' }}>Commentaires</div>
                     {Array.isArray(lastActivity.comments) && lastActivity.comments.length > 0 ? (
@@ -540,6 +543,13 @@ function App() {
                         {lastActivity.comments.map((c, idx) => (
                           <div key={`c-${idx}`} style={{ border: '1px solid #eef2f6', borderRadius: 8, padding: 10 }}>
                             <div style={{ fontSize: 13, color: '#2a3948', whiteSpace: 'pre-wrap' }}>{c?.text || c?.body || ''}</div>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6, fontSize: 12, color: '#5a6b7b' }}>
+                              {c?.created_at && <span>🕒 {fmtDate(c.created_at)}</span>}
+                              {c?.url && <a href={c.url} target="_blank" rel="noreferrer" style={{ color: '#0b5cab', textDecoration: 'none' }}>Voir</a>}
+                              {c?.post?.urn && (
+                                <span>Origine: {typeof c.post.urn === 'string' ? c.post.urn : `${c.post.urn?.type}:${c.post.urn?.value}`}</span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -550,10 +560,22 @@ function App() {
                   <div style={{ border: '1px solid #e7eef5', background: 'white', borderRadius: 10, padding: 12 }}>
                     <div style={{ fontWeight: 700, color: '#0f1d2d' }}>Réactions</div>
                     {Array.isArray(lastActivity.reactions) && lastActivity.reactions.length > 0 ? (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-                        {lastActivity.reactions.map((r, idx) => (
-                          <span key={`r-${idx}`} style={{ border: '1px solid #eef2f6', borderRadius: 999, padding: '6px 10px', fontSize: 12, color: '#3b4a5a' }}>{r?.type || r?.reaction || '👍'}</span>
-                        ))}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
+                        {lastActivity.reactions.map((r, idx) => {
+                          const rType = r?.type || r?.reaction || '👍';
+                          const rCreated = r?.created_at;
+                          const rPostUrn = r?.urn || r?.post?.urn;
+                          const rUrl = r?.url || r?.post?.url;
+                          const labelUrn = typeof rPostUrn === 'string' ? rPostUrn : (rPostUrn ? `${rPostUrn.type}:${rPostUrn.value}` : null);
+                          return (
+                            <div key={`r-${idx}`} style={{ border: '1px solid #eef2f6', borderRadius: 8, padding: 10, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ border: '1px solid #eef2f6', borderRadius: 999, padding: '6px 10px', fontSize: 12, color: '#3b4a5a' }}>{rType}</span>
+                              {rCreated && <span style={{ fontSize: 12, color: '#5a6b7b' }}>🕒 {fmtDate(rCreated)}</span>}
+                              {rUrl && <a href={rUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#0b5cab', textDecoration: 'none' }}>Voir</a>}
+                              {labelUrn && <span style={{ fontSize: 12, color: '#5a6b7b' }}>Origine: {labelUrn}</span>}
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div style={{ color: '#5a6b7b', marginTop: 6 }}>Aucune réaction.</div>
