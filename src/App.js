@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 function App() {
   const [form, setForm] = useState({ nom: '' });
   const [fiche, setFiche] = useState(null);
+  const [prospects, setProspects] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -13,25 +14,51 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setFiche(null);
+    setProspects([]);
     
     try {
-      // URL de l'API Vercel (serverless function)
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/prospect' 
-        : 'https://hdw-server-front-back-58kqvlice.vercel.app/api/prospect';
-      
-      const res = await fetch(apiUrl, {
+      // URL API locale (Express) en dev; en prod, route serverless/edge si définie
+      const baseUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+      const apiListUrl = `${baseUrl}/prospects`;
+
+      // 1) Charger uniquement la liste des 5 profils correspondants
+      const resList = await fetch(apiListUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      
-      const data = await res.json();
-      console.log('📋 Données complètes reçues:', data);
-      setFiche(data);
+      const list = await resList.json();
+      setProspects(Array.isArray(list) ? list : []);
     } catch (err) {
       console.error('❌ Erreur lors de la recherche:', err);
       alert('Erreur lors de la recherche du prospect.');
+    }
+    setLoading(false);
+  };
+
+  const handleSelectProspect = async (p) => {
+    setLoading(true);
+    setFiche(null);
+    try {
+      const baseUrl = process.env.NODE_ENV === 'production' ? '' : 'http://localhost:4000';
+      const detailUrl = `${baseUrl}/prospect/detail`;
+      const payload = {
+        alias: p.alias,
+        url: p.url,
+        urn: p.urn,
+      };
+      const res = await fetch(detailUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      const normalized = Array.isArray(data) ? (data[0] || null) : data;
+      if (!normalized) throw new Error('Profil vide');
+      setFiche(normalized);
+    } catch (err) {
+      console.error('❌ Erreur lors du chargement du profil détaillé:', err);
+      alert("Erreur lors du chargement du profil détaillé.");
     }
     setLoading(false);
   };
@@ -83,6 +110,51 @@ function App() {
           {loading ? '🔍 Recherche...' : '🔍 Rechercher'}
         </button>
       </form>
+      {prospects.length > 0 && (
+        <div style={{
+          marginTop: 24,
+          padding: 16,
+          border: '2px solid #0077b5',
+          borderRadius: 12,
+          backgroundColor: 'white'
+        }}>
+          <h2 style={{ color: '#0077b5', marginBottom: 12 }}>🧑‍💼 Sélectionnez un profil</h2>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {prospects.map((p, idx) => (
+              <li key={idx} style={{
+                display: 'flex', alignItems: 'center', gap: 12, padding: 10,
+                border: '1px solid #e0e0e0', borderRadius: 8, background: '#f8f9fa'
+              }}>
+                {p.image && <img src={p.image} alt={p.nom} style={{ width: 48, height: 48, borderRadius: '50%' }} />}
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{p.nom}</div>
+                  <div style={{ fontSize: 13, color: '#555' }}>{p.headline}</div>
+                  <div style={{ fontSize: 12, color: '#777' }}>{p.localisation}</div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => handleSelectProspect(p)}
+                    disabled={loading}
+                    style={{
+                      padding: '8px 12px',
+                      fontSize: 14,
+                      backgroundColor: '#0077b5',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 6,
+                      cursor: loading ? 'not-allowed' : 'pointer'
+                    }}
+                  >Afficher profil</button>
+                  {p.url && (
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>Voir</a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {fiche && (
         <div style={{ 
           marginTop: 32, 
@@ -96,166 +168,24 @@ function App() {
             color: '#0077b5', 
             marginBottom: '20px',
             textAlign: 'center'
-          }}>📋 Fiche prospect complète</h2>
-          
-          {/* Informations de base */}
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-              👤 Informations de base
-            </h3>
-            <p><b>Nom :</b> {fiche.nom}</p>
-            <p><b>Headline :</b> {fiche.headline}</p>
-            <p><b>Localisation :</b> {fiche.location}</p>
-            <p><b>Email :</b> {fiche.email || 'Non disponible'}</p>
-            <p><b>Téléphone :</b> {fiche.telephone || 'Non disponible'}</p>
-            {fiche.url && (
-              <p><b>Lien LinkedIn :</b> <a href={fiche.url} target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>{fiche.url}</a></p>
-            )}
-            {fiche.alias && <p><b>Alias LinkedIn :</b> {fiche.alias}</p>}
-            {fiche.internalId && <p><b>ID LinkedIn :</b> {fiche.internalId}</p>}
-            <p><b>Ouvert aux opportunités :</b> {fiche.openToWork ? 'Oui' : 'Non'}</p>
-            <p><b>URN :</b> <code style={{ fontSize: '11px', background: '#f0f0f0', padding: '2px 4px' }}>{fiche.urn}</code></p>
-            {fiche.image && (
-              <div style={{ marginTop: 16, textAlign: 'center' }}>
-                <img src={fiche.image} alt="Avatar" style={{ width: 120, height: 120, borderRadius: '50%', border: '3px solid #0077b5' }} />
-              </div>
-            )}
-          </div>
-
-          {/* Sources de données */}
-          {fiche.dataSourcesAvailable && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                📊 Sources de données disponibles
-              </h3>
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                <li>✅ Profil de base : Disponible</li>
-                <li>{fiche.dataSourcesAvailable.detailedProfile ? '✅' : '❌'} Profil détaillé : {fiche.dataSourcesAvailable.detailedProfile ? 'Disponible' : 'Non disponible'}</li>
-                <li>{fiche.dataSourcesAvailable.posts ? '✅' : '❌'} Posts : {fiche.dataSourcesAvailable.posts ? 'Disponible' : 'Non disponible'}</li>
-                <li>{fiche.dataSourcesAvailable.reactions ? '✅' : '❌'} Réactions : {fiche.dataSourcesAvailable.reactions ? 'Disponible' : 'Non disponible'}</li>
-                <li>{fiche.dataSourcesAvailable.emailLookup ? '✅' : '❌'} Email lookup : {fiche.dataSourcesAvailable.emailLookup ? 'Disponible' : 'Non disponible'}</li>
-              </ul>
-            </div>
-          )}
-
-          {/* Toutes les données brutes */}
-          {fiche.rawUserData && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                🔍 Toutes les données LinkedIn disponibles
-              </h3>
-              <div style={{ 
-                background: '#f8f9fa', 
-                border: '1px solid #dee2e6', 
-                borderRadius: '8px', 
-                padding: '15px',
-                overflow: 'auto',
-                maxHeight: '400px'
-              }}>
-                <pre style={{ 
-                  margin: 0, 
-                  fontSize: '12px', 
-                  lineHeight: '1.4',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}>
-                  {JSON.stringify(fiche.rawUserData, null, 2)}
-                </pre>
-              </div>
-            </div>
-          )}
-
-          {/* Expérience professionnelle */}
-          {fiche.experience && fiche.experience.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                💼 Expérience professionnelle ({fiche.experienceCount})
-              </h3>
-              {fiche.experience.map((exp, index) => (
-                <div key={index} style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '8px' }}>
-                  <p><b>Poste :</b> {exp.title}</p>
-                  <p><b>Entreprise :</b> {exp.company}</p>
-                  <p><b>Période :</b> {exp.startDate} - {exp.endDate || 'Présent'}</p>
-                  {exp.description && <p><b>Description :</b> {exp.description}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Formation */}
-          {fiche.education && fiche.education.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                🎓 Formation ({fiche.educationCount})
-              </h3>
-              {fiche.education.map((edu, index) => (
-                <div key={index} style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '8px' }}>
-                  <p><b>Diplôme :</b> {edu.degree}</p>
-                  <p><b>Établissement :</b> {edu.school}</p>
-                  <p><b>Période :</b> {edu.startDate} - {edu.endDate || 'Présent'}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Compétences */}
-          {fiche.skills && fiche.skills.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                🛠️ Compétences ({fiche.skillsCount})
-              </h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {fiche.skills.map((skill, index) => (
-                  <span key={index} style={{ 
-                    backgroundColor: '#0077b5', 
-                    color: 'white', 
-                    padding: '5px 10px', 
-                    borderRadius: '15px', 
-                    fontSize: '14px' 
-                  }}>
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Posts récents */}
-          {fiche.posts && fiche.posts.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                📝 Posts récents ({fiche.postCount})
-              </h3>
-              {fiche.posts.map((post, index) => (
-                <div key={index} style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '8px' }}>
-                  <p><b>Date :</b> {new Date(post.createdAt).toLocaleDateString('fr-FR')}</p>
-                  <p><b>Contenu :</b> {post.text?.substring(0, 200)}...</p>
-                  <p><b>Likes :</b> {post.likes || 0} | <b>Commentaires :</b> {post.comments || 0}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Réactions récentes */}
-          {fiche.reactions && fiche.reactions.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ color: '#0077b5', borderBottom: '2px solid #0077b5', paddingBottom: '5px' }}>
-                👍 Réactions récentes ({fiche.reactionCount})
-              </h3>
-              {fiche.reactions.map((reaction, index) => (
-                <div key={index} style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'white', borderRadius: '8px' }}>
-                  <p><b>Type :</b> {reaction.type}</p>
-                  <p><b>Date :</b> {new Date(reaction.createdAt).toLocaleDateString('fr-FR')}</p>
-                  <p><b>Sur le post de :</b> {reaction.postAuthor}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Métadonnées */}
-          <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#e9ecef', borderRadius: '8px', fontSize: '12px' }}>
-            <p><b>Dernière mise à jour :</b> {fiche.lastUpdated ? new Date(fiche.lastUpdated).toLocaleString('fr-FR') : 'Non disponible'}</p>
-            <p><b>Recherche effectuée :</b> "{fiche.searchQuery || 'Aucune'}"</p>
+          }}>📋 Profil LinkedIn (exhaustif)</h2>
+          <div style={{ 
+            background: '#fff', 
+            border: '1px solid #dee2e6', 
+            borderRadius: '8px', 
+            padding: '15px',
+            overflow: 'auto',
+            maxHeight: '70vh'
+          }}>
+            <pre style={{ 
+              margin: 0, 
+              fontSize: '12px', 
+              lineHeight: '1.4',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word'
+            }}>
+              {JSON.stringify(fiche, null, 2)}
+            </pre>
           </div>
         </div>
       )}

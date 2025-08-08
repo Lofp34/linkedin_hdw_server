@@ -1576,6 +1576,7 @@ app.use(cors());
 app.post("/prospect", async (req: Request, res: Response) => {
   const { nom, secteur, localisation } = req.body;
   try {
+    // 1) Rechercher des profils correspondant au mot-clé
     const searchParams = {
       keywords: nom,
       industry: secteur,
@@ -1583,24 +1584,155 @@ app.post("/prospect", async (req: Request, res: Response) => {
       count: 1
     };
     const results = await makeRequest(API_CONFIG.ENDPOINTS.SEARCH_USERS, searchParams);
-    console.log("Résultat LinkedIn MCP :", results);
-    if (results && results.length > 0) {
-      const user = results[0];
-      res.json({
-        nom: user.name,
-        secteur: user.headline,
-        localisation: user.location,
-        email: "", // LinkedIn ne fournit pas l'email
-        telephone: "", // LinkedIn ne fournit pas le téléphone
-        description: user.headline,
-        url: user.url,
-        image: user.image
-      });
-    } else {
-      res.json({ message: "Aucun prospect trouvé." });
+
+    if (!results || results.length === 0) {
+      return res.json({ message: "Aucun prospect trouvé." });
     }
+
+    // 2) Choisir le premier résultat et récupérer SON profil détaillé (exhaustif)
+    const user = results[0];
+    const userUrn = user?.urn?.type && user?.urn?.value
+      ? `${user.urn.type}:${user.urn.value}`
+      : (typeof user?.urn === "string" ? user.urn : (user?.urn?.value ?? ""));
+
+    const identifiers = [
+      user?.alias,
+      user?.url,
+      userUrn
+    ].filter((v) => typeof v === "string" && v.trim().length > 0);
+
+    let detailedProfile: any = null;
+    let lastError: any = null;
+    for (const identifier of identifiers) {
+      try {
+        detailedProfile = await makeRequest(
+          API_CONFIG.ENDPOINTS.USER_PROFILE,
+          {
+            user: identifier,
+            with_experience: true,
+            with_education: true,
+            with_skills: true,
+            timeout: 300
+          }
+        );
+        break;
+      } catch (e: any) {
+        lastError = e;
+      }
+    }
+
+    if (!detailedProfile) {
+      // Impossible de récupérer le profil détaillé; renvoyer un message d’erreur utile
+      return res.status(502).json({
+        error: "Impossible de récupérer le profil détaillé",
+        details: lastError?.message || ""
+      });
+    }
+
+    // 3) Renvoyer le contenu exhaustif de get_linkedin_profile tel quel
+    res.json(detailedProfile);
   } catch (error: any) {
     res.status(500).json({ error: "Erreur lors de la recherche LinkedIn", details: error.message });
+  }
+});
+
+// Renvoie une liste simplifiée des 5 premiers profils trouvés
+app.post("/prospects", async (req: Request, res: Response) => {
+  const { nom, secteur, localisation } = req.body;
+  try {
+    const searchParams = {
+      keywords: nom,
+      industry: secteur,
+      location: localisation,
+      count: 5
+    };
+    const results = await makeRequest(API_CONFIG.ENDPOINTS.SEARCH_USERS, searchParams);
+    const list = Array.isArray(results) ? results : [];
+    const simplified = list.slice(0, 5).map((user: any) => {
+      const urn = user?.urn?.type && user?.urn?.value
+        ? `${user.urn.type}:${user.urn.value}`
+        : (typeof user?.urn === "string" ? user.urn : (user?.urn?.value ?? ""));
+      return {
+        nom: user?.name ?? user?.fullName ?? user?.displayName ?? "",
+        headline: user?.headline ?? user?.title ?? "",
+        localisation: user?.location ?? user?.geoLocation ?? user?.area ?? "",
+        url: user?.url ?? user?.profileUrl ?? user?.linkedinUrl ?? "",
+        image: user?.image ?? user?.profileImage ?? user?.avatar ?? "",
+        urn,
+        alias: user?.alias ?? ""
+      };
+    });
+    res.json(simplified);
+  } catch (error: any) {
+    res.status(500).json({ error: "Erreur lors de la recherche LinkedIn", details: error.message });
+  }
+});
+
+// Récupère le profil détaillé d'un utilisateur sélectionné (alias, URL ou URN)
+app.post("/prospect/detail", async (req: Request, res: Response) => {
+  const { identifier, alias, url, urn } = req.body || {};
+  try {
+    const candidates: string[] = [];
+
+    // Priorité: identifier direct s'il est fourni, puis alias, url, urn
+    if (typeof identifier === "string" && identifier.trim().length > 0) {
+      candidates.push(identifier.trim());
+    }
+    if (typeof alias === "string" && alias.trim().length > 0) {
+      candidates.push(alias.trim());
+    }
+    if (typeof url === "string" && url.trim().length > 0) {
+      candidates.push(url.trim());
+    }
+    if (typeof urn === "string" && urn.trim().length > 0) {
+      const rawUrn = urn.trim();
+      candidates.push(rawUrn);
+      // Ajoute une version normalisée si le préfixe est absent
+      if (!rawUrn.includes(":")) {
+        candidates.push(`fsd_profile:${rawUrn}`);
+      }
+    }
+
+    if (candidates.length === 0) {
+      return res.status(400).json({ error: "Aucun identifiant fourni (identifier, alias, url, urn)" });
+    }
+
+    let detailedProfile: any = null;
+    let lastError: any = null;
+    for (const id of candidates) {
+      try {
+        detailedProfile = await makeRequest(
+          API_CONFIG.ENDPOINTS.USER_PROFILE,
+          {
+            user: id,
+            with_experience: true,
+            with_education: true,
+            with_skills: true,
+            timeout: 300
+          }
+        );
+        break;
+      } catch (e: any) {
+        lastError = e;
+      }
+    }
+
+    if (!detailedProfile) {
+      return res.status(502).json({
+        error: "Impossible de récupérer le profil détaillé",
+        details: lastError?.message || ""
+      });
+    }
+
+    // Certaines réponses HDW renvoient un tableau d'un seul élément
+    const normalized = Array.isArray(detailedProfile) ? (detailedProfile[0] ?? null) : detailedProfile;
+    if (!normalized) {
+      return res.status(502).json({ error: "Profil vide reçu" });
+    }
+
+    res.json(normalized);
+  } catch (error: any) {
+    res.status(500).json({ error: "Erreur lors de la récupération du profil détaillé", details: error.message });
   }
 });
 
