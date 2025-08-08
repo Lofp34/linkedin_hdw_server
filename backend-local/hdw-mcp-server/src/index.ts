@@ -96,6 +96,7 @@ const API_CONFIG = {
     LINKEDIN_POST: "/api/linkedin/management/post",
     LINKEDIN_POST_REPOSTS: "/api/linkedin/post/reposts",
     LINKEDIN_POST_COMMENTS: "/api/linkedin/post/comments",
+    LINKEDIN_POST_REACTIONS: "/api/linkedin/post/reactions",
     LINKEDIN_GOOGLE_COMPANY: "/api/linkedin/google/company",
     LINKEDIN_COMPANY: "/api/linkedin/company",
     LINKEDIN_COMPANY_EMPLOYEES: "/api/linkedin/company/employees",
@@ -1733,6 +1734,84 @@ app.post("/prospect/detail", async (req: Request, res: Response) => {
     res.json(normalized);
   } catch (error: any) {
     res.status(500).json({ error: "Erreur lors de la récupération du profil détaillé", details: error.message });
+  }
+});
+
+// Récupère les posts d'un utilisateur (via son URN fsd_profile:...)
+app.post("/prospect/posts", async (req: Request, res: Response) => {
+  const { urn, count = 1 } = req.body || {};
+  try {
+    if (typeof urn !== "string" || urn.trim().length === 0) {
+      return res.status(400).json({ error: "URN utilisateur requis" });
+    }
+    const normalized = urn.includes(":") ? urn : `fsd_profile:${urn}`;
+    if (!isValidUserURN(normalized)) {
+      return res.status(400).json({ error: "URN invalide. Doit commencer par 'fsd_profile:'" });
+    }
+    const posts = await makeRequest(API_CONFIG.ENDPOINTS.LINKEDIN_USER_POSTS, {
+      urn: normalized,
+      count: typeof count === "number" && count > 0 ? count : 1,
+      timeout: 300
+    });
+    res.json(Array.isArray(posts) ? posts : []);
+  } catch (error: any) {
+    res.status(500).json({ error: "Erreur lors de la récupération des posts", details: error.message });
+  }
+});
+
+// Récupère le dernier post + ses commentaires et réactions
+app.post("/prospect/last-activity", async (req: Request, res: Response) => {
+  const { urn, comments_count = 10, reactions_count = 50, sort = "relevance" } = req.body || {};
+  try {
+    if (typeof urn !== "string" || urn.trim().length === 0) {
+      return res.status(400).json({ error: "URN utilisateur requis" });
+    }
+    const normalized = urn.includes(":") ? urn : `fsd_profile:${urn}`;
+    if (!isValidUserURN(normalized)) {
+      return res.status(400).json({ error: "URN invalide. Doit commencer par 'fsd_profile:'" });
+    }
+
+    // 1) Dernier post
+    const posts = await makeRequest(API_CONFIG.ENDPOINTS.LINKEDIN_USER_POSTS, {
+      urn: normalized,
+      count: 1,
+      timeout: 300
+    });
+    const first = Array.isArray(posts) && posts.length > 0 ? posts[0] : null;
+    if (!first) {
+      return res.json({ post: null, activity_urn: null, comments: [], reactions: [] });
+    }
+
+    // 2) URN d'activité du post
+    let activityUrn: string | null = null;
+    const pUrn: any = (first as any)?.urn;
+    if (typeof pUrn === "string") {
+      activityUrn = pUrn.startsWith("activity:") ? pUrn : `activity:${pUrn}`;
+    } else if (pUrn?.type && pUrn?.value) {
+      activityUrn = `${pUrn.type}:${pUrn.value}`;
+    }
+    if (!activityUrn || !activityUrn.startsWith("activity:")) {
+      return res.json({ post: first, activity_urn: null, comments: [], reactions: [] });
+    }
+
+    // 3) Commentaires
+    const comments = await makeRequest(API_CONFIG.ENDPOINTS.LINKEDIN_POST_COMMENTS, {
+      urn: activityUrn,
+      sort,
+      count: typeof comments_count === "number" && comments_count > 0 ? comments_count : 10,
+      timeout: 300
+    });
+
+    // 4) Réactions
+    const reactions = await makeRequest(API_CONFIG.ENDPOINTS.LINKEDIN_POST_REACTIONS, {
+      urn: activityUrn,
+      count: typeof reactions_count === "number" && reactions_count > 0 ? reactions_count : 50,
+      timeout: 300
+    });
+
+    res.json({ post: first, activity_urn: activityUrn, comments, reactions });
+  } catch (error: any) {
+    res.status(500).json({ error: "Erreur lors de la récupération de l'activité", details: error.message });
   }
 });
 
